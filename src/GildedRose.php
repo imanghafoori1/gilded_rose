@@ -1,78 +1,64 @@
 <?php
+$ds = DIRECTORY_SEPARATOR;
+
+require __DIR__.$ds.'Quality.php';
+require __DIR__.$ds.'Items'.$ds.'ItemFactory.php';
+require __DIR__.$ds.'Items'.$ds.'BaseItem.php';
+require __DIR__.$ds.'Items'.$ds.'Cake.php';
+require __DIR__.$ds.'Items'.$ds.'Sulfur.php';
+require __DIR__.$ds.'Items'.$ds.'Ticket.php';
+require __DIR__.$ds.'Items'.$ds.'Torshi.php';
+require __DIR__.$ds.'Items'.$ds.'Normal.php';
+
+ItemFactory::instance('گوگرد', 'Sulfur');
+ItemFactory::instance('عادی', 'Normal');
+ItemFactory::instance('ترشی', 'Torshi');
+ItemFactory::instance('بلیت هواپیما', 'Ticket');
+ItemFactory::instance('کیک خامه ای', 'Cake');
+
+
+interface Item {
+    public function updateSaleIn();
+    public function preSellIn();
+    public function afterSellIn();
+}
 
 class GildedRose
 {
-    public $name;
-
-    private $quality;
-
-    private $sellIn;
+    /**
+     * @var Item
+     */
+    private $item;
 
     public function __construct($name, $quality, $sellIn)
     {
-        $this->name = $name;
-        $this->quality = $quality;
-        $this->sellIn = $sellIn;
+        // Fail Fast
+        $item = ItemFactory::makeItemObj($name, [$quality, $sellIn]);
+        $this->addItem($item);
     }
 
     public function getQuality()
     {
-        return $this->quality;
+        return $this->item->quality->getAmount();
     }
 
     public function getSellIn()
     {
-        return $this->sellIn;
+        return $this->item->sellIn;
     }
 
+    // High Level Code
     public function tick()
     {
-        if ($this->name != 'ترشی' and $this->name != 'بلیت هواپیما') {
-            if ($this->quality > 0) {
-                if ($this->name != 'گوگرد') {
-                    $this->quality = $this->quality - 1;
-                }
-            }
-        } else {
-            if ($this->quality < 50) {
-                $this->quality = $this->quality + 1;
+        $this->item->updateSaleIn(); // It is a "Command"
 
-                if ($this->name == 'بلیت هواپیما') {
-                    if ($this->sellIn < 11) {
-                        if ($this->quality < 50) {
-                            $this->quality = $this->quality + 1;
-                        }
-                    }
-                    if ($this->sellIn < 6) {
-                        if ($this->quality < 50) {
-                            $this->quality = $this->quality + 1;
-                        }
-                    }
-                }
-            }
-        }
+        $m = $this->item->sellIn >= 0 ? 'preSellIn': 'afterSellIn';
+        $this->item->$m();
+    }
 
-        if ($this->name != 'گوگرد') {
-            $this->sellIn = $this->sellIn - 1;
-        }
-
-        if ($this->sellIn < 0) {
-            if ($this->name != 'ترشی') {
-                if ($this->name != 'بلیت هواپیما') {
-                    if ($this->quality > 0) {
-                        if ($this->name != 'گوگرد') {
-                            $this->quality = $this->quality - 1;
-                        }
-                    }
-                } else {
-                    $this->quality = $this->quality - $this->quality;
-                }
-            } else {
-                if ($this->quality < 50) {
-                    $this->quality = $this->quality + 1;
-                }
-            }
-        }
+    private function addItem(Item $item)
+    {
+        $this->item = $item;
     }
 }
 
